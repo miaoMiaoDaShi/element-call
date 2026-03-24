@@ -30,3 +30,9 @@ yarn-error.log
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Vendored matrix-js-sdk (keep source, exclude local repo/deps/build outputs)
+/vendor/matrix-js-sdk/.git/
+/vendor/matrix-js-sdk/node_modules/
+/vendor/matrix-js-sdk/.yarn/
+/vendor/matrix-js-sdk/lib/

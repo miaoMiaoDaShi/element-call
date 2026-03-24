@@ -1,0 +1,45 @@
+name: Publish to npm
+on:
+    workflow_call:
+        outputs:
+            id:
+                description: "The npm package@version string we published"
+                value: ${{ jobs.npm.outputs.id }}
+permissions: {}
+jobs:
+    npm:
+        name: Publish to npm
+        runs-on: ubuntu-24.04
+        permissions:
+            contents: read
+            id-token: write
+        outputs:
+            id: ${{ steps.npm-publish.outputs.id }}
+        steps:
+            - name: 🧮 Checkout code
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+              with:
+                  ref: staging
+
+            - name: 🔧 Yarn cache
+              uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+              with:
+                  cache: "yarn"
+                  registry-url: "https://registry.npmjs.org"
+                  node-version-file: package.json
+
+            # Ensure npm 11.5.1 or later is installed
+            - name: Update npm
+              run: npm install -g npm@latest
+
+            - name: 🔨 Install dependencies
+              run: "yarn install --frozen-lockfile"
+
+            - name: 🚀 Publish to npm
+              id: npm-publish
+              run: |
+                  npm publish --provenance --access public --tag "$TAG"
+                  release=$(jq -r '"\(.name)@\(.version)"' package.json)
+                  echo "id=$release" >> $GITHUB_OUTPUT
+              env:
+                  TAG: ${{ contains(steps.npm-publish.outputs.id, '-rc.') && 'next' || 'latest' }}
