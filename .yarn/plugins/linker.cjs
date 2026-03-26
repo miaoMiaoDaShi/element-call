@@ -20,9 +20,11 @@ module.exports = {
         const process = require("process");
 
         // Create a descriptor that we can use to target our direct dependencies
-        const projectPath = config.projectCwd
-          .replace(/\\/g, "/")
-          .replace("/C:/", "C:/");
+        let projectPath = config.projectCwd.replace(/\\/g, "/");
+        // Yarn may report Windows cwd as `/D:/path/...`; strip the leading slash so path.join works
+        if (/^\/[A-Za-z]:\//.test(projectPath)) {
+          projectPath = projectPath.slice(1);
+        }
         const manifestPath = path.join(projectPath, "package.json");
         const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
         const selfDescriptor = structUtils.parseDescriptor(
