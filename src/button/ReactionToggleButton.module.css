@@ -99,15 +99,20 @@ div.reactionPopupMenuRoot.reactionPopupMenuModal > div > div {
 .alert {
   margin-bottom: var(--cpd-space-3x);
   animation: grow-in 200ms;
-  height: 2.5em;
+  min-height: 2.5em;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* Matrix 加密错误里常有很长的英文短语或设备信息，必须允许在弹窗宽度内换行，避免正文溢出红色边框。 */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @keyframes grow-in {
   from {
-    height: 0;
+    max-height: 0;
   }
 
   to {
-    height: 2.5em;
+    max-height: 12em;
   }
 }
