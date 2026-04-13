@@ -991,6 +991,14 @@ export function createCallViewModel$(
   );
 
   const pipEnabled$ = scope.behavior(setPipEnabled$, false);
+  pipEnabled$.pipe(
+    tap((enabled) => {
+      // 记录 Web 侧是否真正收到 PiP 开关事件，帮助区分“宿主请求进入”与“页面状态已切换”。
+      logger.info(
+        `[CallViewModel] pipEnabled$ updated: enabled=${enabled} observed=${setPipEnabled$.observed} window=${window.innerWidth}x${window.innerHeight}`,
+      );
+    }),
+  ).subscribe();
 
   const windowSize$ =
     options.windowSize$ ??
@@ -1024,6 +1032,13 @@ export function createCallViewModel$(
       switchMap((pip) => (pip ? of<WindowMode>("pip") : naturalWindowMode$)),
     ),
   );
+  windowMode$.pipe(
+    tap((mode) => {
+      logger.info(
+        `[CallViewModel] windowMode$ updated: mode=${mode} window=${window.innerWidth}x${window.innerHeight}`,
+      );
+    }),
+  ).subscribe();
 
   const spotlightExpandedToggle$ = new Subject<void>();
   const spotlightExpanded$ = createToggle$(
@@ -1244,6 +1259,11 @@ export function createCallViewModel$(
   const layout$ = scope.behavior<Layout>(
     layoutInternals$.pipe(map(({ layout }) => layout)),
   );
+  layout$.pipe(
+    tap((layout) => {
+      logger.info(`[CallViewModel] layout$ updated: type=${layout.type}`);
+    }),
+  ).subscribe();
 
   /**
    * The current generation of the tile store, exposed for debugging purposes.

@@ -67,15 +67,26 @@ export const setPlaybackStarted = (): void => {
   }
 };
 
+function pipDebugContext(): string {
+  return `observed=${setPipEnabled$.observed} window=${window.innerWidth}x${window.innerHeight}`;
+}
+
 window.controls = {
   canEnterPip(): boolean {
-    return setPipEnabled$.observed;
+    const canEnterPip = setPipEnabled$.observed;
+    // 记录原生在进入 Android PiP 前向 Web 侧探测能力时的上下文，便于和宿主侧日志对齐。
+    logger.info(
+      `[controls] canEnterPip called: canEnterPip=${canEnterPip} ${pipDebugContext()}`,
+    );
+    return canEnterPip;
   },
   enablePip(): void {
+    logger.info(`[controls] enablePip called: ${pipDebugContext()}`);
     if (!setPipEnabled$.observed) throw new Error("No call is running");
     setPipEnabled$.next(true);
   },
   disablePip(): void {
+    logger.info(`[controls] disablePip called: ${pipDebugContext()}`);
     if (!setPipEnabled$.observed) throw new Error("No call is running");
     setPipEnabled$.next(false);
   },
