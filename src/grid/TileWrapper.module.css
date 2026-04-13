@@ -7,6 +7,8 @@ Please see LICENSE in the repository root for full details.
 
 .tile.draggable {
   cursor: grab;
+  /* 移动端 WebView 会把触摸滑动优先解释为页面平移，显式关闭默认触摸手势后，useDrag 才能持续收到拖动事件。 */
+  touch-action: none;
 }
 
 .tile.draggable:active {
