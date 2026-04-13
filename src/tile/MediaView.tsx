@@ -13,6 +13,7 @@ import {
   type ReactNode,
   type ComponentType,
   type SVGAttributes,
+  useEffect,
 } from "react";
 import { useTranslation } from "react-i18next";
 import classNames from "classnames";
@@ -93,6 +94,41 @@ export const MediaView: FC<Props> = ({
   const [showConnectionStats] = useSetting(showConnectionStatsSetting);
 
   const avatarSize = Math.round(Math.min(targetWidth, targetHeight) / 2);
+  const videoPublication = video?.publication;
+  const videoTrack = videoPublication?.track;
+  const mediaStreamTrack = videoTrack?.mediaStreamTrack;
+
+  useEffect(() => {
+    console.debug("[ElementXMediaView] tile render", {
+      userId,
+      hasVideoReference: video !== undefined,
+      hasPublication: videoPublication !== undefined,
+      videoEnabled,
+      publicationSource: videoPublication?.source,
+      publicationMuted: videoPublication?.isMuted,
+      trackSid: videoPublication?.trackSid,
+      hasTrack: videoTrack !== undefined,
+      trackKind: videoTrack?.kind,
+      trackMuted: videoTrack?.isMuted,
+      streamState: videoTrack?.streamState,
+      mediaTrackReadyState: mediaStreamTrack?.readyState,
+      mediaTrackEnabled: mediaStreamTrack?.enabled,
+      mediaTrackMuted: mediaStreamTrack?.muted,
+      targetWidth,
+      targetHeight,
+    });
+  }, [
+    mediaStreamTrack?.enabled,
+    mediaStreamTrack?.muted,
+    mediaStreamTrack?.readyState,
+    targetHeight,
+    targetWidth,
+    userId,
+    video,
+    videoEnabled,
+    videoPublication,
+    videoTrack,
+  ]);
 
   return (
     <animated.div

@@ -79,18 +79,10 @@ describe("MuteState", () => {
     forceMute$.next(false);
     await flushPromises();
 
-    // TODO I'd expect it to go back to previous state (enabled)
-    // but actually it goes back to the initial state from construction (disabled)
-    // Should go back to previous state (enabled)
-    // Skip for now
-    // expect(lastEnabled).toBe(true);
-
-    // But yet it can be unmuted now
-    expect(setEnabled).not.toBeNull();
-
-    setEnabled!(true);
-    await flushPromises();
+    // The user intent before force mute should be restored automatically.
     expect(lastEnabled).toBe(true);
+
+    expect(setEnabled).not.toBeNull();
   });
 });
 
@@ -192,15 +184,10 @@ describe("MuteStates", () => {
     // Try to switch to speaker
     audioOutputDevice.select("0000");
     await flushPromises();
-    // TODO I'd expect it to go back to previous state (enabled)??
-    // But maybe not? If you move the phone away from your ear you may not want it
-    // to automatically enable video?
-    expect(lastVideoEnabled).toBe(false);
-
-    // But yet it can be unmuted now
-    expect(muteStates.video.setEnabled$.value).toBeDefined();
-    muteStates.video.setEnabled$.value?.(true);
-    await flushPromises();
+    // Switching away from earpiece restores the user-requested video state and reopens the camera.
     expect(lastVideoEnabled).toBe(true);
+    expect(latestSyncedState).toBe(true);
+
+    expect(muteStates.video.setEnabled$.value).toBeDefined();
   });
 });

@@ -43,6 +43,7 @@ const defaultHandler: Handler = async (desired) => Promise.resolve(desired);
  */
 export class MuteState<Label, Selected> {
   private readonly handler$ = new BehaviorSubject(defaultHandler);
+  private desiredEnabled = this.enabledByDefault;
 
   public setHandler(handler: Handler): void {
     if (this.handler$.value !== defaultHandler)
@@ -83,14 +84,22 @@ export class MuteState<Label, Selected> {
         }
 
         // Assume the default value only once devices are actually connected
-        let enabled = this.enabledByDefault;
+        let enabled = this.desiredEnabled;
         const set$ = new Subject<boolean>();
         const toggle$ = new Subject<void>();
         const desired$ = merge(set$, toggle$.pipe(map(() => !enabled)));
         const enabled$ = new Observable<boolean>((subscriber) => {
           subscriber.next(enabled);
-          let latestDesired = this.enabledByDefault;
+          let latestDesired = this.desiredEnabled;
           let syncing = false;
+
+          /*
+           * 设备重新可控时，要把强制静音前的期望状态重新同步到 LiveKit。
+           * 否则从听筒切回扬声器后，UI 会显示 video_enabled=true，但底层 camera track 仍保持 ended。
+           */
+          this.handler$.value(enabled).catch((err) => {
+            logger.error("MuteState-enable: handler error", err);
+          });
 
           const sync = async (): Promise<void> => {
             if (enabled === latestDesired) syncing = false;
@@ -115,6 +124,7 @@ export class MuteState<Label, Selected> {
           };
 
           const s = desired$.subscribe((desired) => {
+            this.desiredEnabled = desired;
             latestDesired = desired;
             if (syncing === false) {
               syncing = true;

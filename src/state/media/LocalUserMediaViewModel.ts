@@ -74,16 +74,48 @@ export function createLocalUserMedia(
     baseUserMedia.video$.pipe(
       switchMap((v) => {
         const track = v?.publication.track;
+        logger.debug("[ElementXMediaViewModel] local video reference update", {
+          hasVideoReference: v !== undefined,
+          hasPublication: v?.publication !== undefined,
+          publicationSource: v?.publication.source,
+          publicationMuted: v?.publication.isMuted,
+          trackSid: v?.publication.trackSid,
+          hasTrack: track !== undefined,
+          isLocalVideoTrack: track instanceof LocalVideoTrack,
+          trackMuted: track?.isMuted,
+          streamState: track?.streamState,
+          mediaTrackReadyState: track?.mediaStreamTrack?.readyState,
+          mediaTrackEnabled: track?.mediaStreamTrack?.enabled,
+          mediaTrackMuted: track?.mediaStreamTrack?.muted,
+        });
         if (!(track instanceof LocalVideoTrack)) return of(null);
         return merge(
           // Watch for track restarts because they indicate a camera switch.
           // This event is also emitted when unmuting the track object.
           fromEvent(track, TrackEvent.Restarted).pipe(
             startWith(null),
-            map(() => track),
+            map(() => {
+              logger.debug("[ElementXMediaViewModel] local video track restarted", {
+                trackSid: v.publication.trackSid,
+                mediaTrackReadyState: track.mediaStreamTrack.readyState,
+                mediaTrackEnabled: track.mediaStreamTrack.enabled,
+                mediaTrackMuted: track.mediaStreamTrack.muted,
+              });
+              return track;
+            }),
           ),
           // When the track object is muted, reset it to null.
-          fromEvent(track, TrackEvent.Muted).pipe(map(() => null)),
+          fromEvent(track, TrackEvent.Muted).pipe(
+            map(() => {
+              logger.debug("[ElementXMediaViewModel] local video track muted", {
+                trackSid: v.publication.trackSid,
+                mediaTrackReadyState: track.mediaStreamTrack.readyState,
+                mediaTrackEnabled: track.mediaStreamTrack.enabled,
+                mediaTrackMuted: track.mediaStreamTrack.muted,
+              });
+              return null;
+            }),
+          ),
         );
       }),
     );

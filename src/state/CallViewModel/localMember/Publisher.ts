@@ -157,6 +157,21 @@ export class Publisher {
     // because it could prompt for permission, and we don't want to do that unnecessarily.
     const audio = this.muteStates.audio.enabled$.value;
     const video = this.muteStates.video.enabled$.value;
+    this.logger.debug("createAndSetupTracks current mute/device state", {
+      audio,
+      video,
+      roomState: lkRoom.state,
+      activeAudioDevice: lkRoom.getActiveDevice("audioinput"),
+      activeVideoDevice: lkRoom.getActiveDevice("videoinput"),
+      microphoneEnabled: lkRoom.localParticipant.isMicrophoneEnabled,
+      cameraEnabled: lkRoom.localParticipant.isCameraEnabled,
+      audioPublications: Array.from(
+        lkRoom.localParticipant.audioTrackPublications.values(),
+      ).map((publication) => describeLocalPublication(publication)),
+      videoPublications: Array.from(
+        lkRoom.localParticipant.videoTrackPublications.values(),
+      ).map((publication) => describeLocalPublication(publication)),
+    });
 
     // We don't await the creation, because livekit could block until the tracks
     // are fully published, and not only that they are created.
@@ -224,7 +239,12 @@ export class Publisher {
       return;
     }
     this.shouldPublish = true;
-    this.logger.debug("startPublishing called");
+    this.logger.debug("startPublishing called", {
+      roomState: this.connection.livekitRoom.state,
+      microphoneEnabled:
+        this.connection.livekitRoom.localParticipant.isMicrophoneEnabled,
+      cameraEnabled: this.connection.livekitRoom.localParticipant.isCameraEnabled,
+    });
 
     const lkRoom = this.connection.livekitRoom;
 
@@ -386,8 +406,20 @@ export class Publisher {
     });
     this.muteStates.video.setHandler(async (enable) => {
       try {
-        this.logger.debug(`handler: Setting LiveKit camera enabled: ${enable}`);
+        this.logger.debug(`handler: Setting LiveKit camera enabled: ${enable}`, {
+          roomState: lkRoom.state,
+          existingCameraPublication: describeLocalPublication(
+            lkRoom.localParticipant.getTrackPublication(Track.Source.Camera),
+          ),
+        });
         await lkRoom.localParticipant.setCameraEnabled(enable);
+        this.logger.debug("handler: LiveKit camera enabled result", {
+          requested: enable,
+          cameraEnabled: lkRoom.localParticipant.isCameraEnabled,
+          cameraPublication: describeLocalPublication(
+            lkRoom.localParticipant.getTrackPublication(Track.Source.Camera),
+          ),
+        });
         // Unmute will restart the track if it was paused upstream,
         // but until explicitly requested, we want to keep it paused.
         if (!this.shouldPublish && enable) {
@@ -416,4 +448,24 @@ export class Publisher {
     );
     trackProcessorSync(scope, track$, trackerProcessorState$);
   }
+}
+
+function describeLocalPublication(
+  publication: LocalTrackPublication | undefined,
+): Record<string, unknown> | undefined {
+  const track = publication?.track;
+  return publication === undefined
+    ? undefined
+    : {
+        source: publication.source,
+        isMuted: publication.isMuted,
+        trackSid: publication.trackSid,
+        hasTrack: track !== undefined,
+        trackKind: track?.kind,
+        trackMuted: track?.isMuted,
+        streamState: track?.streamState,
+        mediaTrackReadyState: track?.mediaStreamTrack?.readyState,
+        mediaTrackEnabled: track?.mediaStreamTrack?.enabled,
+        mediaTrackMuted: track?.mediaStreamTrack?.muted,
+      };
 }

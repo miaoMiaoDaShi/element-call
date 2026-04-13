@@ -333,7 +333,7 @@ class ControlledAudioOutput implements MediaDevice<
         ),
       ],
       (available, preferredId) => {
-        const id = preferredId ?? available.keys().next().value;
+        const id = preferredId ?? selectDefaultControlledAudioOutput(available);
         return id === undefined
           ? undefined
           : { id, virtualEarpiece: id === EARPIECE_CONFIG_ID };
@@ -370,6 +370,16 @@ class ControlledAudioOutput implements MediaDevice<
       );
     });
   }
+}
+
+function selectDefaultControlledAudioOutput(
+  available: Map<string, AudioOutputDeviceLabel>,
+): string | undefined {
+  // Android 可能先上报听筒再上报扬声器；默认优先扬声器，避免入会后被听筒模式强制关闭摄像头。
+  const speaker = Array.from(available.entries()).find(
+    ([, label]) => label.type === "speaker",
+  );
+  return speaker?.[0] ?? available.keys().next().value;
 }
 
 class VideoInput implements MediaDevice<DeviceLabel, SelectedDevice> {
