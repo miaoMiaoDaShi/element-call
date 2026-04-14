@@ -22,6 +22,7 @@ import { LazyEventEmitter } from "./LazyEventEmitter";
 import { getUrlParams } from "./UrlParams";
 import { Config } from "./config/Config";
 import { ElementCallReactionEventType } from "./reactions";
+import "./utils/promiseWithResolversPolyfill";
 
 // Subset of the actions in element-web
 export enum ElementWidgetActions {
@@ -72,8 +73,17 @@ export const initializeWidget = (
   rtcApplication: string = "m.call",
   sendRoomEvents = false,
 ): void => {
+  let initializationStep = "read_url_params";
+  let widgetId: string | null = null;
+  let parentUrl: string | null = null;
+  let roomId: string | null = null;
+  let userId: string | null = null;
+  let deviceId: string | null = null;
+  let baseUrl: string | null = null;
+  let e2eEnabled = false;
+  let allowIceFallback = false;
   try {
-    const {
+    ({
       widgetId,
       parentUrl,
       roomId,
@@ -82,20 +92,23 @@ export const initializeWidget = (
       baseUrl,
       e2eEnabled,
       allowIceFallback,
-    } = getUrlParams();
+    } = getUrlParams());
 
     if (!roomId) throw new Error("Room ID must be supplied");
     if (!userId) throw new Error("User ID must be supplied");
     if (!deviceId) throw new Error("Device ID must be supplied");
     if (!baseUrl) throw new Error("Base URL must be supplied");
     if (widgetId && parentUrl) {
+      initializationStep = "create_widget_api";
       const parentOrigin = new URL(parentUrl).origin;
       logger.info("Widget API is available");
       const api = new WidgetApi(widgetId, parentOrigin);
+      initializationStep = "request_always_on_screen";
       api.requestCapability(MatrixCapabilities.AlwaysOnScreen);
 
       // Set up the lazy action emitter, but only for select actions that we
       // intend for the app to handle
+      initializationStep = "register_widget_action_handlers";
       const lazyActions = new LazyEventEmitter();
       [
         WidgetApiToWidgetAction.ThemeChange,
@@ -162,6 +175,7 @@ export const initializeWidget = (
         EventType.CallEncryptionKeysPrefix,
       ];
 
+      initializationStep = "create_room_widget_client";
       const client = createRoomWidgetClient(
         api,
         {
@@ -198,6 +212,7 @@ export const initializeWidget = (
         return client;
       };
 
+      initializationStep = "publish_widget_helpers";
       widget = { api, lazyActions, client: clientPromise() };
     } else {
       if (import.meta.env.MODE !== "test")
@@ -205,7 +220,24 @@ export const initializeWidget = (
       widget = null;
     }
   } catch (e) {
-    logger.warn("Continuing without the widget API", e);
+    /*
+     * 某些设备上这里会拿到被宿主/浏览器层“抹平”的异常对象，
+     * 直接打印 `e` 只会看到 `{}`，几乎无法判断到底是哪个同步步骤失败。
+     * 因此这里显式补充阶段、关键参数是否存在、错误类型和字符串化消息，
+     * 方便在真机日志里把 widget 初始化失败定位到具体步骤。
+     */
+    logger.warn(
+      `[widget-init] Continuing without the widget API: step=${initializationStep}` +
+        ` widgetIdPresent=${Boolean(widgetId)}` +
+        ` parentUrlPresent=${Boolean(parentUrl)}` +
+        ` roomIdPresent=${Boolean(roomId)}` +
+        ` userIdPresent=${Boolean(userId)}` +
+        ` deviceIdPresent=${Boolean(deviceId)}` +
+        ` baseUrlPresent=${Boolean(baseUrl)}` +
+        ` errorType=${e instanceof Error ? e.constructor.name : typeof e}` +
+        ` errorMessage=${e instanceof Error ? e.message : String(e)}`,
+      e,
+    );
     widget = null;
   }
 };

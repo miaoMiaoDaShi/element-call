@@ -6,6 +6,7 @@ Please see LICENSE in the repository root for full details.
 */
 
 import { useCallback } from "react";
+import { logger } from "matrix-js-sdk/lib/logger";
 import { secureRandomString } from "matrix-js-sdk/lib/randomstring";
 
 import { useClient } from "../ClientContext";
@@ -38,6 +39,10 @@ export function useRegisterPasswordlessUser(): UseRegisterPasswordlessUserType {
       }
 
       try {
+        // 这里只记录注册游客账号的入口状态，不打印显示名称本身，避免把用户输入写进日志。
+        logger.info(
+          `[guest-registration] start: hasDisplayName=${Boolean(displayName.trim())} widgetMode=${Boolean(widget)}`,
+        );
         const recaptchaResponse = await execute();
         const userName = generateRandomName();
         const [client, session] = await register(
@@ -48,7 +53,9 @@ export function useRegisterPasswordlessUser(): UseRegisterPasswordlessUserType {
           true,
         );
         setClient(client, session);
+        logger.info("[guest-registration] success: passwordless client created");
       } catch (e) {
+        logger.error("[guest-registration] failed", e);
         reset();
         throw e;
       }

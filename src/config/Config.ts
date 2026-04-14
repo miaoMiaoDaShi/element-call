@@ -65,14 +65,25 @@ export class Config {
 
   // Convenience accessors
   public static defaultHomeserverUrl(): string | undefined {
+    const urlParams = getUrlParams();
     return (
-      getUrlParams().homeserver ??
+      /*
+       * 当嵌入式 widget 初始化失败时，页面会退回 SPA 分支。
+       * 这时如果仍然只读 `homeserver`，嵌入模式下该字段通常为 null，
+       * 最终会错误地落回 DEFAULT_CONFIG 里的 localhost:8008。
+       *
+       * 对于嵌入模式，URL 里已经带有真实的 homeserver `baseUrl`，
+       * 因此这里优先把它作为备用值，避免 fallback 链路把真实房间通话误判成本地开发环境。
+       */
+      urlParams.homeserver ??
+      urlParams.baseUrl ??
       Config.get().default_server_config?.["m.homeserver"].base_url
     );
   }
 
   public static defaultServerName(): string | undefined {
-    const homeserver = getUrlParams().homeserver;
+    const urlParams = getUrlParams();
+    const homeserver = urlParams.homeserver ?? urlParams.baseUrl;
     if (homeserver) {
       const url = new URL(homeserver);
       return url.hostname;

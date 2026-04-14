@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
 Please see LICENSE in the repository root for full details.
 */
 
-import { type FC, useCallback, useState } from "react";
+import { type FC, useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { logger } from "matrix-js-sdk/lib/logger";
@@ -52,6 +52,13 @@ export const RoomAuthView: FC = () => {
 
   const { t } = useTranslation();
   const location = useLocation();
+
+  useEffect(() => {
+    // 进入这个页面就意味着当前路由处于“未拿到可用 Matrix client，只能游客加入”的分支。
+    logger.info(
+      `[room-auth-view] mounted: header=${header ?? "default"} pathname=${location.pathname}`,
+    );
+  }, [header, location.pathname]);
 
   return (
     <>

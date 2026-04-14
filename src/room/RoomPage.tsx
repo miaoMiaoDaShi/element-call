@@ -90,6 +90,9 @@ export const RoomPage: FC = () => {
     // If we've finished loading, are not already authed and we've been given a display name as
     // a URL param, automatically register a passwordless user
     if (!loading && !authenticated && displayName && !widget) {
+      logger.info(
+        `[room-page] attempting automatic guest registration from URL param: hasDisplayName=true roomIdOrAlias=${roomIdOrAlias ?? "none"}`,
+      );
       setIsRegistering(true);
       registerPasswordlessUser(displayName)
         .catch((e) => {
@@ -105,6 +108,36 @@ export const RoomPage: FC = () => {
     displayName,
     setIsRegistering,
     registerPasswordlessUser,
+  ]);
+
+  useEffect(() => {
+    if (loading || isRegistering || error) {
+      return;
+    }
+    /*
+     * 这组日志用于判断当前为什么会落到游客页：
+     * - 没有 client：会显示 RoomAuthView
+     * - 已有 client：继续走 group call 加载
+     * - URL 自带 displayName：会尝试自动创建游客账号
+     */
+    logger.info(
+      `[room-page] resolved entry state: hasClient=${Boolean(client)} authenticated=${authenticated} ` +
+        `passwordlessUser=${Boolean(passwordlessUser)} hasDisplayNameParam=${Boolean(displayName)} ` +
+        `widgetMode=${Boolean(widget)} roomIdOrAlias=${roomIdOrAlias ?? "none"} groupCallState=${groupCallState.kind}`,
+    );
+    if (!client) {
+      logger.warn("[room-page] rendering RoomAuthView because no Matrix client is available for this call route");
+    }
+  }, [
+    authenticated,
+    client,
+    displayName,
+    error,
+    groupCallState.kind,
+    isRegistering,
+    loading,
+    passwordlessUser,
+    roomIdOrAlias,
   ]);
 
   const [optInAnalytics, setOptInAnalytics] = useOptInAnalytics();
