@@ -21,6 +21,9 @@ On mobile platforms (iOS, Android), web views do not reliably support selecting 
   playing audio in the webview. It can be helpful to do device setup on the native app when the webviews audio is ready.
   In particular android is using it to setup the output channel so that the call volume can
   be controlled by the hardware volume rocker.
+- `controls.getNativeRingtonePlaybackConfig?: () => { shouldPlay: boolean, volume: number }`: Optional native callback for ringtone playback policy.
+  Android WebView can use this to tell Element Call whether the ringtone should currently play at all, and which normalized ringtone volume
+  (`0..1`) should be applied on top of the web-side volume multiplier.
 
 ## Element Call button delegation
 

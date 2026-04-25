@@ -8,6 +8,8 @@ Please see LICENSE in the repository root for full details.
 import { Subject } from "rxjs";
 import { logger } from "matrix-js-sdk/lib/logger";
 
+import { type RingtonePlaybackConfig } from "./ringtonePlayback";
+
 export interface Controls {
   canEnterPip(): boolean;
   enablePip(): void;
@@ -17,6 +19,7 @@ export interface Controls {
   setAudioDevice(id: string): void;
   onAudioDeviceSelect?: (id: string) => void;
   onAudioPlaybackStarted?: () => void;
+  getNativeRingtonePlaybackConfig?: () => RingtonePlaybackConfig;
   setAudioEnabled(enabled: boolean): void;
   showNativeAudioDevicePicker?: () => void;
   onBackButtonPressed?: () => void;

@@ -15,6 +15,7 @@ import {
 } from "./settings/settings";
 import { useEarpieceAudioConfig, useMediaDevices } from "./MediaDevicesContext";
 import { type PrefetchedSounds } from "./soundUtils";
+import { resolveRingtonePlayback } from "./ringtonePlayback";
 import { useUrlParams } from "./UrlParams";
 import * as controls from "./controls";
 
@@ -60,7 +61,8 @@ async function playSound(
  * through gain.
  * @param ctx The context to play through.
  * @param buffer The buffer to play.
- * @param volume The volume to play at.
+ * @param getPlaybackConfig Callback used to resolve the current playback policy
+ * and volume for each loop iteration.
  * @param stereoPan The stereo pan to apply.
  * @param delayS Delay in seconds between each loop.
  * @returns A function used to end the sound. This function will return a promise when the sound has stopped.
@@ -68,7 +70,7 @@ async function playSound(
 function playSoundLooping(
   ctx: AudioContext,
   buffer: AudioBuffer,
-  volume: number,
+  getPlaybackConfig: () => PlaybackConfig,
   stereoPan: number,
   delayS?: number,
 ): () => Promise<void> {
@@ -85,8 +87,18 @@ function playSoundLooping(
     // Play a sound immediately
     lastSoundPromise = Promise.resolve();
     do {
+      const playbackConfig = getPlaybackConfig();
       // Queue up the next sound.
-      nextSoundPromise = playSound(ctx, buffer, volume, stereoPan, delayS, ac);
+      nextSoundPromise = playbackConfig.shouldPlay
+        ? playSound(
+            ctx,
+            buffer,
+            playbackConfig.volume,
+            stereoPan,
+            delayS,
+            ac,
+          )
+        : waitForDelay(delayS, ac);
       // Await the previous sound.
       await lastSoundPromise;
       // Swap the promises over, and loop round to play the next sound.
@@ -111,6 +123,7 @@ interface Props<S extends string> {
   sounds: PrefetchedSounds<S> | null;
   latencyHint: AudioContextLatencyCategory;
   muted?: boolean;
+  category?: "effect" | "ringtone";
 }
 
 interface UseAudioContext<S extends string> {
@@ -120,6 +133,28 @@ interface UseAudioContext<S extends string> {
    * Map of sound name to duration in seconds.
    */
   soundDuration: Record<string, number>;
+}
+
+interface PlaybackConfig {
+  shouldPlay: boolean;
+  volume: number;
+}
+
+function waitForDelay(
+  delayS = 0,
+  abort?: AbortController,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const timeout = window.setTimeout(resolve, delayS * 1000);
+    abort?.signal.addEventListener(
+      "abort",
+      () => {
+        window.clearTimeout(timeout);
+        resolve();
+      },
+      { once: true },
+    );
+  });
 }
 
 /**
@@ -189,6 +224,22 @@ export function useAudioContext<S extends string>(
   }, [audioContext, audioOutputId, controlledAudioDevices]);
   const { pan: earpiecePan, volume: earpieceVolume } = useEarpieceAudioConfig();
 
+  const getPlaybackConfig = (): PlaybackConfig => {
+    const baseVolume = soundEffectVolume * earpieceVolume;
+    if (props.category !== "ringtone") {
+      return {
+        shouldPlay: baseVolume > 0,
+        volume: baseVolume,
+      };
+    }
+    // 来电铃声在 Android WebView 中需要额外跟随宿主应用返回的系统铃声策略。
+    // 非原生环境下这个 getter 不存在，因此会自动回退到网页侧当前的音量逻辑。
+    return resolveRingtonePlayback(
+      baseVolume,
+      window.controls.getNativeRingtonePlaybackConfig?.(),
+    );
+  };
+
   // Don't return a function until we're ready.
   if (!audioContext || !audioBuffers || props.muted) {
     return null;
@@ -200,21 +251,25 @@ export function useAudioContext<S extends string>(
         logger.debug(`Tried to play a sound that wasn't buffered (${name})`);
         return;
       }
+      const playbackConfig = getPlaybackConfig();
+      if (!playbackConfig.shouldPlay) {
+        return;
+      }
       return playSound(
         audioContext,
         audioBuffers[name],
-        soundEffectVolume * earpieceVolume,
+        playbackConfig.volume,
         earpiecePan,
       );
     },
-    playSoundLooping: (name, delayS: number): (() => Promise<void>) => {
+    playSoundLooping: (name, delayS?: number): (() => Promise<void>) => {
       if (!audioBuffers[name]) {
         throw Error(`Tried to play a sound that wasn't buffered (${name})`);
       }
       return playSoundLooping(
         audioContext,
         audioBuffers[name],
-        soundEffectVolume * earpieceVolume,
+        getPlaybackConfig,
         earpiecePan,
         delayS,
       );

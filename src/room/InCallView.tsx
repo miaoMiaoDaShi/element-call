@@ -235,6 +235,7 @@ export const InCallView: FC<InCallViewProps> = ({
     sounds: pickupPhaseSoundCache,
     latencyHint: "interactive",
     muted: muteAllAudio,
+    category: "ringtone",
   });
   const latestPickupPhaseAudio = useLatest(pickupPhaseAudio);
 
