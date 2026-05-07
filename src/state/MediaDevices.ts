@@ -18,6 +18,7 @@ import {
 } from "rxjs";
 import { createMediaDeviceObserver } from "@livekit/components-core";
 import { type Logger, logger as rootLogger } from "matrix-js-sdk/lib/logger";
+import { type RTCCallIntent } from "matrix-js-sdk/lib/matrixrtc";
 
 import {
   audioInput as audioInputSetting,
@@ -372,14 +373,31 @@ class ControlledAudioOutput implements MediaDevice<
   }
 }
 
-function selectDefaultControlledAudioOutput(
+export function selectDefaultControlledAudioOutput(
   available: Map<string, AudioOutputDeviceLabel>,
+  callIntent: RTCCallIntent | undefined = getUrlParams().callIntent,
 ): string | undefined {
-  // Android 可能先上报听筒再上报扬声器；默认优先扬声器，避免入会后被听筒模式强制关闭摄像头。
+  const external = Array.from(available.entries()).find(
+    ([, label]) => isExternalControlledAudioOutput(label),
+  );
+  if (external !== undefined) return external[0];
+
+  // Android 宿主会把真实系统设备同步到这里；语音通话没有外设时优先听筒，视频通话保持扬声器优先。
+  const preferredBuiltInType = callIntent === "audio" ? "earpiece" : "speaker";
+  const preferredBuiltIn = Array.from(available.entries()).find(
+    ([, label]) => label.type === preferredBuiltInType,
+  );
+  if (preferredBuiltIn !== undefined) return preferredBuiltIn[0];
+
   const speaker = Array.from(available.entries()).find(
     ([, label]) => label.type === "speaker",
   );
   return speaker?.[0] ?? available.keys().next().value;
+}
+
+function isExternalControlledAudioOutput(label: AudioOutputDeviceLabel): boolean {
+  // controlledAudioDevices 中的 name/number 才代表宿主上报的外部设备；default 只是浏览器兜底项，不应压过听筒/扬声器策略。
+  return label.type === "name" || label.type === "number";
 }
 
 class VideoInput implements MediaDevice<DeviceLabel, SelectedDevice> {
