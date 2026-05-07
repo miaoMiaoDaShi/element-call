@@ -17,6 +17,8 @@ import {
   EndCallIcon,
   ShareScreenSolidIcon,
   SettingsSolidIcon,
+  VoiceCallSolidIcon,
+  VolumeOnSolidIcon,
 } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import styles from "./Button.module.css";
@@ -132,6 +134,36 @@ export const SettingsButton: FC<SettingsButtonProps> = (props) => {
       <CpdButton
         iconOnly
         Icon={SettingsSolidIcon}
+        kind="secondary"
+        {...props}
+      />
+    </Tooltip>
+  );
+};
+
+interface AudioOutputButtonProps extends ComponentPropsWithoutRef<"button"> {
+  targetOutput: "earpiece" | "speaker";
+  size?: "sm" | "lg";
+}
+
+export const AudioOutputButton: FC<AudioOutputButtonProps> = ({
+  targetOutput,
+  ...props
+}) => {
+  const { t } = useTranslation();
+  // targetOutput 表示点击按钮后要切换到的输出模式，所以按钮展示的是“下一步”的目标设备。
+  const Icon = targetOutput === "earpiece" ? VoiceCallSolidIcon : VolumeOnSolidIcon;
+  const label =
+    targetOutput === "earpiece"
+      ? t("settings.devices.handset")
+      : t("settings.devices.loudspeaker");
+
+  return (
+    <Tooltip label={label}>
+      <CpdButton
+        iconOnly
+        aria-label={label}
+        Icon={Icon}
         kind="secondary"
         {...props}
       />

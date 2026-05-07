@@ -9,12 +9,10 @@ import {
   type FC,
   useCallback,
   useMemo,
-  useState,
   type JSX,
   useEffect,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { type MatrixClient } from "matrix-js-sdk";
 import { Button } from "@vector-im/compound-web";
 import classNames from "classnames";
 import { logger } from "matrix-js-sdk/lib/logger";
@@ -36,10 +34,8 @@ import { InviteButton } from "../button/InviteButton";
 import {
   EndCallButton,
   MicButton,
-  SettingsButton,
   VideoButton,
 } from "../button/Button";
-import { SettingsModal, defaultSettingsTab } from "../settings/SettingsModal";
 import { useMediaQuery } from "../useMediaQuery";
 import { E2eeType } from "../e2ee/e2eeType";
 import { Link } from "../button/Link";
@@ -54,7 +50,6 @@ import { getValue } from "../utils/observable";
 import { useBehavior } from "../useBehavior";
 
 interface Props {
-  client: MatrixClient;
   matrixInfo: MatrixInfo;
   muteStates: MuteStates;
   onEnter: () => void;
@@ -67,7 +62,6 @@ interface Props {
 }
 
 export const LobbyView: FC<Props> = ({
-  client,
   matrixInfo,
   muteStates,
   onEnter,
@@ -92,18 +86,6 @@ export const LobbyView: FC<Props> = ({
   const videoEnabled = useBehavior(muteStates.video.enabled$);
   const toggleAudio = useBehavior(muteStates.audio.toggle$);
   const toggleVideo = useBehavior(muteStates.video.toggle$);
-
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState(defaultSettingsTab);
-
-  const openSettings = useCallback(
-    () => setSettingsModalOpen(true),
-    [setSettingsModalOpen],
-  );
-  const closeSettings = useCallback(
-    () => setSettingsModalOpen(false),
-    [setSettingsModalOpen],
-  );
 
   const navigate = useNavigate();
   const onLeaveClick = useCallback(() => {
@@ -239,20 +221,10 @@ export const LobbyView: FC<Props> = ({
               onClick={toggleVideo ?? undefined}
               disabled={toggleVideo === null}
             />
-            <SettingsButton onClick={openSettings} />
             {!confineToRoom && <EndCallButton onClick={onLeaveClick} />}
           </div>
         </div>
       </div>
-      {client && (
-        <SettingsModal
-          client={client}
-          open={settingsModalOpen}
-          onDismiss={closeSettings}
-          tab={settingsTab}
-          onTabChange={setSettingsTab}
-        />
-      )}
     </>
   );
 };

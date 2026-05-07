@@ -5,7 +5,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
 Please see LICENSE in the repository root for full details.
 */
 
-import { IconButton, Tooltip } from "@vector-im/compound-web";
 import { type MatrixClient, type Room as MatrixRoom } from "matrix-js-sdk";
 import {
   type FC,
@@ -25,10 +24,6 @@ import classNames from "classnames";
 import { BehaviorSubject, map } from "rxjs";
 import { useObservable } from "observable-hooks";
 import { logger as rootLogger } from "matrix-js-sdk/lib/logger";
-import {
-  VoiceCallSolidIcon,
-  VolumeOnSolidIcon,
-} from "@vector-im/compound-design-tokens/assets/web/icons";
 import { useTranslation } from "react-i18next";
 
 import LogoMark from "../icons/LogoMark.svg?react";
@@ -38,7 +33,7 @@ import {
   MicButton,
   VideoButton,
   ShareScreenButton,
-  SettingsButton,
+  AudioOutputButton,
   ReactionToggleButton,
 } from "../button";
 import { Header, LeftNav, RightNav, RoomHeaderInfo } from "../Header";
@@ -317,10 +312,6 @@ export const InCallView: FC<InCallViewProps> = ({
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState(defaultSettingsTab);
 
-  const openSettings = useCallback(
-    () => setSettingsModalOpen(true),
-    [setSettingsModalOpen],
-  );
   const closeSettings = useCallback(
     () => setSettingsModalOpen(false),
     [setSettingsModalOpen],
@@ -374,29 +365,8 @@ export const InCallView: FC<InCallViewProps> = ({
     [vm],
   );
 
-  useAppBarSecondaryButton(
-    useMemo(() => {
-      if (audioOutputSwitcher === null) return null;
-      const isEarpieceTarget = audioOutputSwitcher.targetOutput === "earpiece";
-      const Icon = isEarpieceTarget ? VoiceCallSolidIcon : VolumeOnSolidIcon;
-      const label = isEarpieceTarget
-        ? t("settings.devices.handset")
-        : t("settings.devices.loudspeaker");
-
-      return (
-        <Tooltip label={label}>
-          <IconButton
-            onClick={(e) => {
-              e.preventDefault();
-              audioOutputSwitcher.switch();
-            }}
-          >
-            <Icon />
-          </IconButton>
-        </Tooltip>
-      );
-    }, [t, audioOutputSwitcher]),
-  );
+  // Android 宿主已经提供自己的设置入口，这里清空 Element Call 顶栏右侧的齿轮按钮，避免在通话页重复暴露设置。
+  useAppBarSecondaryButton(null);
 
   useAppBarHidden(!showHeader);
 
@@ -644,12 +614,14 @@ export const InCallView: FC<InCallViewProps> = ({
       />,
     );
   }
-  if (layout.type !== "pip")
+  if (layout.type !== "pip" && audioOutputSwitcher !== null)
     buttons.push(
-      <SettingsButton
+      <AudioOutputButton
         size={buttonSize}
-        key="settings"
-        onClick={openSettings}
+        key="audio_output"
+        targetOutput={audioOutputSwitcher.targetOutput}
+        onClick={audioOutputSwitcher.switch}
+        data-testid="incall_audio_output"
       />,
     );
 

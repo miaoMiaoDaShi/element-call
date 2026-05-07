@@ -432,7 +432,6 @@ export const GroupCallView: FC<Props> = ({
     <>
       {shareModal}
       <LobbyView
-        client={client}
         matrixInfo={matrixInfo}
         muteStates={muteStates}
         onEnter={() => setJoined(true)}

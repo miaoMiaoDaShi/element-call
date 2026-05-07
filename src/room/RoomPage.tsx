@@ -193,7 +193,6 @@ export const RoomPage: FC = () => {
         return (
           muteStates && (
             <LobbyView
-              client={client!}
               matrixInfo={{
                 userId: client!.getUserId() ?? "",
                 displayName: userDisplayName ?? "",
