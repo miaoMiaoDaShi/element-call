@@ -730,10 +730,6 @@ export function enterRTCSession(
   const useDeviceSessionMemberEvents =
     features?.feature_use_device_session_member_events;
   const { sendNotificationType: notificationType, callIntent } = getUrlParams();
-  // Android WebView 侧诊断：确认 URL 解析出的 callIntent 已经传入 MatrixRTC membership。
-  logger.info(
-    `[ElementXCallIntent] enterRTCSession: notificationType=${notificationType ?? "undefined"}, callIntent=${callIntent ?? "undefined"}`,
-  );
   const multiSFU =
     matrixRTCMode === MatrixRTCMode.Compatibility ||
     matrixRTCMode === MatrixRTCMode.Matrix_2_0;

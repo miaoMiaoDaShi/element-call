@@ -40,7 +40,7 @@ export const MicButton: FC<MicButtonProps> = ({ enabled, ...props }) => {
         iconOnly
         aria-label={label}
         Icon={Icon}
-        kind={enabled ? "primary" : "secondary"}
+        kind={enabled ? "secondary" : "primary"}
         {...props}
       />
     </Tooltip>
@@ -65,7 +65,7 @@ export const VideoButton: FC<VideoButtonProps> = ({ enabled, ...props }) => {
         iconOnly
         aria-label={label}
         Icon={Icon}
-        kind={enabled ? "primary" : "secondary"}
+        kind={enabled ? "secondary" : "primary"}
         {...props}
       />
     </Tooltip>
