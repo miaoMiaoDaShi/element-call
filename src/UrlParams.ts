@@ -518,11 +518,19 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
     configuration,
   );
 
-  return {
+  const finalParams: UrlParams = {
     ...properties,
     ...intentPreset,
     ...pickBy(configuration, (v?: unknown) => v !== undefined),
   };
+
+  // Android WebView 侧诊断：只记录通话意图和开关，不输出用户内容或 token，方便和 native 的 callMode/intent 日志对齐。
+  logger.info(
+    `[ElementXCallIntent] UrlParams resolved: intent=${intent}, callIntent=${finalParams.callIntent ?? "undefined"}, ` +
+      `skipLobby=${finalParams.skipLobby}, isWidget=${isWidget}, controlledAudioDevices=${finalParams.controlledAudioDevices}`,
+  );
+
+  return finalParams;
 };
 
 /**

@@ -26,17 +26,27 @@ export function calculateInitialMuteState(
   if (skipLobby && !isWidgetMode) {
     // If not in widget mode and lobby is skipped, default to muted to protect user privacy.
     // In the SPA context we don't want to unmute users without giving them a chance to adjust their settings first.
-    return {
+    const muteState = {
       audioEnabled: false,
       videoEnabled: false,
     };
+    logger.info(
+      `[ElementXCallIntent] Initial mute state: callIntent=${callIntent ?? "undefined"}, ` +
+        `audioEnabled=${muteState.audioEnabled}, videoEnabled=${muteState.videoEnabled}, reason=non-widget-skip-lobby`,
+    );
+    return muteState;
   }
 
   // Embedded contexts are trusted environments, so they allow unmuted by default.
   // Same for when showing a lobby, as users can adjust their settings there.
   // Additionally, if the call intent is "audio", we disable video by default.
-  return {
+  const muteState = {
     audioEnabled: true,
     videoEnabled: callIntent != "audio",
   };
+  logger.info(
+    `[ElementXCallIntent] Initial mute state: callIntent=${callIntent ?? "undefined"}, ` +
+      `audioEnabled=${muteState.audioEnabled}, videoEnabled=${muteState.videoEnabled}, reason=widget-or-lobby`,
+  );
+  return muteState;
 }
