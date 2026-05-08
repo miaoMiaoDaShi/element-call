@@ -500,6 +500,11 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
       "ring",
       "notification",
     ]),
+    callIntent: parser.getEnumParam("callIntent", [
+      "audio",
+      "video",
+      "unknown",
+    ] as RTCCallIntent[]),
     waitForCallPickup: parser.getFlag("waitForCallPickup"),
     autoLeaveWhenOthersLeft: parser.getFlag("autoLeave"),
     noiseSuppression: parser.getFlagParam("noiseSuppression", true),
