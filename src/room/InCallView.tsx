@@ -436,7 +436,6 @@ export const InCallView: FC<InCallViewProps> = ({
   const earpieceOverlay = (
     <EarpieceOverlay
       show={earpieceMode && !reconnecting}
-      onBackToVideoPressed={audioOutputSwitcher?.switch}
     />
   );
 

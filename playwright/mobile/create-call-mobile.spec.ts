@@ -107,7 +107,7 @@ mobileTest(
     ).toBeVisible();
     await expect(
       guestPage.getByRole("button", { name: "Back to Speaker Mode" }),
-    ).toBeVisible();
+    ).toHaveCount(0);
 
     // Should auto-mute the video when earpiece is selected
     await expect(guestPage.getByTestId("incall_videomute")).toBeDisabled();

@@ -158,15 +158,6 @@ exports[`InCallView > rendering > renders 1`] = `
       >
         Only works while using app
       </p>
-      <button
-        class="_button_13vu4_8"
-        data-kind="primary"
-        data-size="sm"
-        role="button"
-        tabindex="0"
-      >
-        Back to Speaker Mode
-      </button>
       <div
         class="spacer"
       />
